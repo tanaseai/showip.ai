@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>showip.ai — What's My IP Address?</title>
+<meta name="description" content="See your public IP address, location, ISP and connection details — instantly, free, no signup.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌐</text></svg>">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #131316;
+    --border: #232328;
+    --text: #f4f4f5;
+    --muted: #a1a1aa;
+    --faint: #63636b;
+    --accent: #7dd3fc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  ::selection { background: var(--accent); color: #000; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; width: 100%; }
+
+  nav { border-bottom: 1px solid var(--border); }
+  nav .wrap { display: flex; justify-content: space-between; align-items: center; height: 60px; }
+  .brand { font-weight: 700; letter-spacing: .04em; font-size: 15px; text-decoration: none; color: var(--text); }
+  .brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; }
+  .nav-links a:hover { color: var(--text); }
+
+  main { flex: 1; }
+  header.hero { padding: 96px 0 64px; text-align: center; }
+  .eyebrow {
+    display: inline-block; font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--faint); margin-bottom: 24px;
+  }
+  .ip-label { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin-bottom: 12px; }
+  .ip-address {
+    font-size: clamp(38px, 8vw, 68px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    word-break: break-all;
+    line-height: 1.15;
+  }
+  .ip-address.loading { color: var(--faint); font-size: clamp(24px, 5vw, 36px); }
+  .copy-row { margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 12px 28px; border-radius: 999px; font-size: 15px; font-weight: 600;
+    text-decoration: none; cursor: pointer; border: none; font-family: inherit;
+    transition: transform .15s, opacity .2s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: var(--text); color: #000; }
+  .btn-ghost { border: 1px solid var(--border); color: var(--text); background: transparent; }
+  .btn-ghost:hover { border-color: var(--faint); }
+  .copied-note { font-size: 13px; color: var(--accent); height: 20px; margin-top: 10px; }
+
+  section.details { padding: 32px 0 72px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px;
+  }
+  .tile .k { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; }
+  .tile .v { font-size: 17px; font-weight: 600; word-break: break-word; }
+  .tile .v.small { font-size: 14px; font-weight: 500; color: var(--muted); }
+
+  section.about { padding: 72px 0; border-top: 1px solid var(--border); }
+  .kicker { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--faint); margin-bottom: 20px; }
+  h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 16px; }
+  p.body { color: var(--muted); font-size: 16px; max-width: 640px; }
+  p.body + p.body { margin-top: 14px; }
+
+  footer { border-top: 1px solid var(--border); padding: 40px 0 56px; }
+  footer .wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  footer p { color: var(--faint); font-size: 14px; }
+  footer a { color: var(--muted); text-decoration: none; font-size: 14px; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 560px) {
+    header.hero { padding: 72px 0 48px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="/">showip<span>.ai</span></a>
+    <div class="nav-links">
+      <a href="#details">Details</a>
+      <a href="#about">About</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <header class="hero">
+    <div class="wrap">
+      <div class="eyebrow">Free · No signup · Instant</div>
+      <div class="ip-label">Your public IP address</div>
+      <div class="ip-address loading" id="ip">Detecting…</div>
+      <div class="copy-row">
+        <button class="btn btn-primary" id="copyBtn" disabled>Copy IP</button>
+        <button class="btn btn-ghost" id="refreshBtn">Refresh</button>
+      </div>
+      <div class="copied-note" id="copiedNote"></div>
+    </div>
+  </header>
+
+  <section class="details" id="details">
+    <div class="wrap">
+      <div class="grid" id="grid">
+        <div class="tile"><div class="k">Location</div><div class="v" data-f="location">…</div></div>
+        <div class="tile"><div class="k">ISP / Organization</div><div class="v" data-f="isp">…</div></div>
+        <div class="tile"><div class="k">ASN</div><div class="v" data-f="asn">…</div></div>
+        <div class="tile"><div class="k">Timezone</div><div class="v" data-f="timezone">…</div></div>
+        <div class="tile"><div class="k">Connection</div><div class="v small" data-f="connection">…</div></div>
+        <div class="tile"><div class="k">User agent</div><div class="v small" data-f="ua">…</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about" id="about">
+    <div class="wrap">
+      <div class="kicker">About</div>
+      <h2>What is an IP address?</h2>
+      <p class="body">An IP address is a unique number assigned to your device on the internet — it's how websites know where to send the page you're reading. Your public IP is visible to every site you visit.</p>
+      <p class="body">showip.ai shows your public IPv4 or IPv6 address along with your approximate location, internet provider, and connection details. Nothing is stored or logged — the lookup happens live, every time you load the page.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 showip.ai</p>
+    <a href="https://tanase.ai" target="_blank" rel="noopener">tanase.ai</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var ipEl = document.getElementById('ip');
+  var copyBtn = document.getElementById('copyBtn');
+  var refreshBtn = document.getElementById('refreshBtn');
+  var note = document.getElementById('copiedNote');
+  var currentIp = '';
+
+  function setTile(name, value) {
+    var el = document.querySelector('[data-f="' + name + '"]');
+    if (el) el.textContent = value || 'Unknown';
+  }
+
+  function load() {
+    ipEl.textContent = 'Detecting…';
+    ipEl.classList.add('loading');
+    copyBtn.disabled = true;
+    note.textContent = '';
+    fetch('/api/ip', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        currentIp = d.ip || '';
+        ipEl.textContent = currentIp || 'Unavailable';
+        ipEl.classList.remove('loading');
+        copyBtn.disabled = !currentIp;
+
+        var loc = [d.city, d.region, d.country].filter(Boolean).join(', ');
+        setTile('location', loc);
+        setTile('isp', d.asOrganization);
+        setTile('asn', d.asn ? 'AS' + d.asn : '');
+        setTile('timezone', d.timezone);
+        var conn = [];
+        if (d.httpProtocol) conn.push(d.httpProtocol.toUpperCase());
+        if (d.tlsVersion) conn.push(d.tlsVersion.toUpperCase());
+        if (d.colo) conn.push('via ' + d.colo.toUpperCase());
+        setTile('connection', conn.join(' · '));
+        setTile('ua', d.userAgent);
+      })
+      .catch(function () {
+        ipEl.textContent = 'Unavailable';
+        ipEl.classList.remove('loading');
+      });
+  }
+
+  copyBtn.addEventListener('click', function () {
+    if (!currentIp) return;
+    function done() {
+      note.textContent = 'Copied to clipboard';
+      setTimeout(function () { note.textContent = ''; }, 2000);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(currentIp).then(done, done);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = currentIp;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      done();
+    }
+  });
+
+  refreshBtn.addEventListener('click', load);
+  load();
+})();
+</script>
+
+</body>
+</html>
